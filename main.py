@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from models.db import SessionLocal, engine,Base
 from models.usermodel import User
 from models.otp_model import OTPLog
-from models.schemas import UserCreate,OTPRequest,OTPVerify,UserVerify,PasswordReset,ChatRequest
+from models.schemas import UserCreate,OTPRequest,OTPVerify,UserVerify,PasswordReset,ChatRequest,ForgotPassword
 from crud import create_user,get_users
 from utils.tockenManager import get_current_user,authenticate_user,create_access_token
 from utils.otp_sms import generate_otp, send_otp_sms
@@ -17,6 +17,8 @@ from transformers import pipeline
 
 
 MODEL_NAME = "microsoft/DialoGPT-small"
+
+# # MODEL_NAME = "distilgpt2"
 chat_pipeline = pipeline(
     "text-generation",
     model=MODEL_NAME,
@@ -153,8 +155,10 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 
 @app.post("/forgot-password")
-def forgot_password(email: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == email).first()
+def forgot_password(emailData: ForgotPassword, db: Session = Depends(get_db)):
+
+    print(emailData)
+    user = db.query(User).filter(User.email == emailData.email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     # Generate reset token
@@ -184,10 +188,12 @@ def reset_password(data: PasswordReset, db: Session = Depends(get_db)):
 @app.post("/chat")
 def chat(request: ChatRequest):
     print(request)
-    response = chat_pipeline(request.message)
-    # response = [{
-    #     "generated_text":"Hi dude"
-    # }]
+    # context = "You are a helpful assistant. Answer politely.\n"
+    # prompt = context + request.message
+    # response = chat_pipeline(prompt)
+    response = [{
+        "generated_text":"Hi dude"
+    }]
     # The response is a list of dicts with 'generated_text'
     return {"response": response[0]["generated_text"]}
 # ...existing code...
